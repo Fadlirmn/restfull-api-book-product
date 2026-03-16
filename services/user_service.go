@@ -17,6 +17,10 @@ func (s *UserService) GetUsers()[]models.User  {
 	return  s.repo.FindAll()
 }
 
+func (s *UserService) FindByUsername(username string) (*models.User, error) {
+	return s.repo.FindByUsername(username)
+}
+
 func (s *UserService) CreateUser(user models.User)  {
 	s.repo.Save(user)
 }

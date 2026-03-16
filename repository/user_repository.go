@@ -14,6 +14,7 @@ import (
 
 type UserRepository interface {
 	FindAll() []models.User
+	FindByUsername(username string)(*models.User,error)
 	Save(users models.User)
 	Update(id string, user models.User) error
 	Delete(id string) error
@@ -36,14 +37,26 @@ func (r *userRepo) FindAll() []models.User {
 	}
 	return users
 }
+
+func (r *userRepo) FindByUsername(username string) (*models.User, error) {
+    var user models.User
+
+    err := r.db.Get(&user, "SELECT * FROM users WHERE username = $1", username)
+
+    if err != nil {
+        return nil, err 
+    }
+    return &user, nil
+}
+
 func (r *userRepo) Save(user models.User) {
 	t := time.Now()
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
 	id := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
-	user.ID = id //masukin id ke sql
+	user.UserID = id //masukin id ke sql
 
-	_, err := r.db.NamedExec("INSERT INTO users(id, username, name, password) VALUES (:id,:username,:name,:password)", 
+	_, err := r.db.NamedExec("INSERT INTO users(id, username, name, password, role) VALUES (:id,:username,:name,:password,:role)", 
 	user,
 )
 	if err != nil {
