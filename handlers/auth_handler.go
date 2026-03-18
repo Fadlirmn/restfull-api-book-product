@@ -41,9 +41,14 @@ func (h *AuthHandler) Login(c *gin.Context)  {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	c.ShouldBindJSON(&req)
+	
 
-	token,err := h.service.Login(req.Username,req.Password)
+	if err:=c.ShouldBindJSON(&req) ; err != nil {
+		c.JSON(400,gin.H{"error":err})
+		return
+	}
+	
+	accessToken,refreshToken,err := h.service.Login(req.Username,req.Password)
 
 	if err != nil {
 		c.JSON(http.StatusUnauthorized,gin.H{
@@ -52,6 +57,26 @@ func (h *AuthHandler) Login(c *gin.Context)  {
 		return
 	}
 	c.JSON(http.StatusOK,gin.H{
-		"token":token,
+		"access_token":accessToken,
+		"refresh_token":refreshToken,
+	})
+
+}
+func (h *AuthHandler)Refresh(c *gin.Context)  {
+	var payload struct{
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+	if err:=c.ShouldBindJSON(&payload);err != nil {
+		c.JSON(400,gin.H{"error":"refresh_token required"})
+		return 
+	}
+
+	accessToken, err := h.service.RefreshToken(payload.RefreshToken)
+	if err != nil {
+		c.JSON(401,gin.H{"error":err.Error()})
+		return 
+	}
+	c.JSON(200,gin.H{
+		"access_token":accessToken,
 	})
 }

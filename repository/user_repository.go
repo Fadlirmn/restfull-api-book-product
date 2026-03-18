@@ -15,9 +15,12 @@ import (
 type UserRepository interface {
 	FindAll() []models.User
 	FindByUsername(username string)(*models.User,error)
+	FindByID(userID string)(*models.User,error)
 	Save(users models.User)
 	Update(id string, user models.User) error
 	Delete(id string) error
+	SaveRefreshToken(userID string, token string, expiresAt time.Time) error
+	FindRefreshToken(token string) (*models.RefreshToken,error)
 }
 
 type userRepo struct {
@@ -49,6 +52,17 @@ func (r *userRepo) FindByUsername(username string) (*models.User, error) {
     return &user, nil
 }
 
+func (r *userRepo) FindByID(userID string) (*models.User, error) {
+    var user models.User
+
+    err := r.db.Get(&user, "SELECT * FROM users WHERE id = $1", userID)
+
+    if err != nil {
+        return nil, err 
+    }
+    return &user, nil
+}
+
 func (r *userRepo) Save(user models.User) {
 	t := time.Now()
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
@@ -72,4 +86,22 @@ func (r *userRepo) Update(id string, user models.User) error {
 func (r *userRepo) Delete(id string) error {
 	_, err := r.db.Exec("DELETE FROM users WHERE id=$1", id)
 	return err
+}
+
+func (r *userRepo)SaveRefreshToken(userID string, token string, expiresAt time.Time) error {
+	_ , _ = r.db.Exec("DELETE FROM refresh_token WHERE user_id =$1 OR expires_at <$2",userID,time.Now())
+
+	_,err:= r.db.Exec("INSERT INTO refresh_token (user_id,token,expires_at,created_at) VALUES ($1,$2,$3,$4)",userID,token,expiresAt,time.Now())
+
+	return err
+}
+
+func (r *userRepo)FindRefreshToken(token string)( *models.RefreshToken,error)  {
+	var rf models.RefreshToken
+
+	err := r.db.Get(&rf,"SELECT * FROM refresh_token WHERE token = $1 AND expires_at > $2 LIMIT 1",token,time.Now())
+	if err != nil {
+		return nil, err
+	}
+	return &rf, nil
 }

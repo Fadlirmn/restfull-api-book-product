@@ -1,7 +1,8 @@
 package utils
 
 import (
-	
+	"crypto/rand"
+	"encoding/hex"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -29,4 +30,13 @@ func GenerateToken(userID string, role string)(string, error)  {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
 
 	return token.SignedString(SECRET_KEY)
+}
+
+func GenerateRandomString(n int)(string, error)  {
+	bytes := make([]byte,n)
+
+	if _,err := rand.Read(bytes); err!=nil{
+		return "", err
+	}
+	return hex.EncodeToString(bytes),nil
 }

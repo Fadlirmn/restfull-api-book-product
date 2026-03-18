@@ -7,3 +7,10 @@ type User struct {
 	Password string `db:"password" json:"password"`
 	Role     string `db:"role" json:"role"`
 }
+
+type Token struct{
+	TokenId int 
+	Token string
+	UserID string
+	ExpiresAT int
+}
